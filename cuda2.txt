@@ -1,0 +1,64 @@
+%%cuda
+#include <iostream>
+#include <vector>
+#include <cuda_runtime.h>
+
+using namespace std;
+
+__global__ void matrixMul(const int* A, const int* B, int* C, int N) {
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < N && col < N) {
+        int sum = 0;
+        for (int k = 0; k < N; ++k) {
+            sum += A[row * N + k] * B[k * N + col];
+        }
+        C[row * N + col] = sum;
+    }
+}
+
+void printMatrix(const vector<int>& matrix, int N) {
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < N; ++j) {
+            cout << matrix[i * N + j] << " ";
+        }
+        cout << endl;
+    }
+}
+
+int main() {
+    const int N = 3;
+    const int blockSize = 2;
+
+    vector<int> hostA = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+    vector<int> hostB = {9, 8, 7, 6, 5, 4, 3, 2, 1};
+    vector<int> hostC(N * N);
+
+    int *deviceA, *deviceB, *deviceC;
+    cudaMalloc(&deviceA, N * N * sizeof(int));
+    cudaMalloc(&deviceB, N * N * sizeof(int));
+    cudaMalloc(&deviceC, N * N * sizeof(int));
+
+    cudaMemcpy(deviceA, hostA.data(), N * N * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(deviceB, hostB.data(), N * N * sizeof(int), cudaMemcpyHostToDevice);
+
+    dim3 threadsPerBlock(blockSize, blockSize);
+    dim3 numBlocks((N + blockSize - 1) / blockSize, (N + blockSize - 1) / blockSize);
+    matrixMul<<<numBlocks, threadsPerBlock>>>(deviceA, deviceB, deviceC, N);
+
+    cudaMemcpy(hostC.data(), deviceC, N * N * sizeof(int), cudaMemcpyDeviceToHost);
+
+    cout << "Matrix A:" << endl;
+    printMatrix(hostA, N);
+    cout << "Matrix B:" << endl;
+    printMatrix(hostB, N);
+    cout << "Matrix C (A * B):" << endl;
+    printMatrix(hostC, N);
+
+    cudaFree(deviceA);
+    cudaFree(deviceB);
+    cudaFree(deviceC);
+
+    return 0;
+}

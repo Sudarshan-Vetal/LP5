@@ -1,0 +1,110 @@
+#include<iostream>
+#include<vector>
+#include<ctime>
+#include<omp.h>
+#include<algorithm>
+using namespace std;
+
+void bubblesort(vector<int>& arr)
+{
+    int n = arr.size();
+    for(int i=0;i<n-1;i++)
+    {
+        for(int j=0;j<n-1-i;j++)
+        {
+            if(arr[j]>arr[j+1])
+            {
+                swap(arr[j],arr[j+1]);
+            }
+        }
+    }
+}
+
+void parallelbubblesort(vector<int>& arr)
+{
+    int n = arr.size();
+    int swapped;
+
+    for(int i=0;i<n-1;i++)
+    {
+        swapped=0;
+        #pragma omp parallel for
+        {
+            for(int j=0;j<n-1-i;j++)
+            {
+                if(arr[j]>arr[j+1])
+                {
+                    swap(arr[j],arr[j+1]);
+                    swapped=1;
+                }
+            }
+            if(swapped==0)
+            {
+                break;
+            }
+        }
+    }
+
+}
+
+int main()
+{
+    int size;
+    cout<<"Enter the number of Elements : "<<endl;
+    cin>>size;
+
+    vector<int> data(size);
+
+    cout<<"Enter Elements : "<<endl;
+
+    for(int i=0;i<size;i++)
+    {
+        cin>>data[i];
+    }
+
+    cout<<"Input Data : "<<endl;
+    for(int i=0;i<size;i++)
+    {
+        cout<<data[i]<<" ";
+    }
+    cout<<endl;
+
+    vector<int> sequentialdata = data;
+    vector<int> paralleldata = data;
+
+    clock_t seq_start = clock();
+    bubblesort(sequentialdata);
+    clock_t seq_end = clock();
+    double seq_time = double(seq_end-seq_start)/CLOCKS_PER_SEC;
+
+    cout<<"Sequentially Sorted Data"<<endl;
+    for(int i=0;i<size;i++)
+    {
+        cout<<sequentialdata[i]<<" ";
+    }
+    cout<<endl;
+    cout<<"Sequential Bubble Sort Time : "<<seq_time<<" seconds"<<endl;
+
+
+    clock_t seq_start1 = clock();
+    parallelbubblesort(paralleldata);
+    clock_t seq_end1 = clock();
+    double seq_time1 = double(seq_end1-seq_start1)/CLOCKS_PER_SEC;
+
+    cout<<"Parallelly Sorted Data"<<endl;
+    for(int i=0;i<size;i++)
+    {
+        cout<<paralleldata[i]<<" ";
+    }
+    cout<<endl;
+    cout<<"Parallel Bubble Sort Time : "<<seq_time1<<" seconds"<<endl;
+
+    bool sortedcorrectly1 = is_sorted(sequentialdata.begin(),sequentialdata.end());
+    bool sortedcorrectly2 = is_sorted(paralleldata.begin(),paralleldata.end());
+
+    if(sortedcorrectly1==true && sortedcorrectly2==true)
+    {
+        cout<<"Sorted Correctly";
+    }
+    return 0;
+}

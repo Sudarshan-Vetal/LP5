@@ -1,0 +1,57 @@
+pip install nvcc4jupyter
+
+%load_ext nvcc4jupyter
+
+%%cuda
+#include<iostream>
+#include<vector>
+#include<cuda_runtime.h>
+using namespace std;
+
+__global__ void add(int* A, int* B, int* C, int size)
+{
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if(tid<size)
+    {
+        C[tid]=A[tid]+B[tid];
+    }
+}
+
+int main()
+{
+    const int N = 5;
+    const size_t vectorBytes = N * sizeof(int);
+
+    vector<int> A = {1,2,3,4,5};
+    vector<int> B = {5,4,3,2,1};
+    vector<int> C(N);
+
+    int* X, *Y,*Z;
+    cudaMalloc(&X, vectorBytes);
+    cudaMalloc(&Y, vectorBytes);
+    cudaMalloc(&Z, vectorBytes);
+
+    cudaMemcpy(X, A.data(), vectorBytes, cudaMemcpyHostToDevice);
+    cudaMemcpy(Y, B.data(), vectorBytes, cudaMemcpyHostToDevice);
+
+    const int threadsperblock = 256;
+    const int blockspergrid = (N+threadsperblock-1)/threadsperblock;
+
+    add<<<blockspergrid,threadsperblock>>>(X,Y,Z,N);
+
+    cudaMemcpy(C.data(), Z, vectorBytes, cudaMemcpyDeviceToHost);
+
+    cout<<"Vector 1 : ";
+    for(int val: A) cout<<val<<" ";
+
+    cout<<"Vector 2 : ";
+    for( int val : B) cout<<val<<" ";
+
+    cout<<"Addition : ";
+    for(int val : C) cout<<val<<" ";
+
+    cudaFree(X);
+    cudaFree(Y);
+    cudaFree(Z);
+
+}

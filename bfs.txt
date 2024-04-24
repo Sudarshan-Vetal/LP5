@@ -1,0 +1,81 @@
+#include<iostream>
+#include<vector>
+#include<queue>
+#include<omp.h>
+using namespace std;
+
+class Graph{
+    int V;
+    vector<vector<int>> adj;
+
+public:
+    Graph(int V): V(V), adj(V) {}
+
+    void addEdge(int v, int w)
+    {
+        adj[v].push_back(w);
+    }
+
+    void parallelBFS(int startVertex)
+    {
+        vector<bool> visited(V, false);
+        queue<int> q;
+
+        visited[startVertex]=true;
+        q.push(startVertex);
+
+        while (!q.empty())
+        {
+            int v = q.front();
+            q.pop();
+            cout<<v<<" ";
+
+            #pragma omp parallel for
+            {
+                for(int i=0;i<adj[v].size();i++)
+                {
+                    int n = adj[v][i];
+                    if(!visited[n])
+                    {
+                        visited[n]=true;
+                        q.push(n);
+                    }
+                }
+            }
+
+        }
+    
+    }
+};
+
+
+int main()
+{
+    cout<<"PARALLEL BFS "<<endl;
+
+    int numVertices, numEdges;
+
+    cout<<"Enter number of Vertices : "<<endl;
+    cin>>numVertices;
+    cout<<"Enter number of Edges    : "<<endl;
+    cin>>numEdges;
+
+    Graph g(numVertices);
+
+    cout<<"Enter the edges : Source Destination"<<endl;
+    for(int i=0;i<numEdges;i++)
+    {
+        int source, destination;
+
+        cin>>source>>destination;
+
+        g.addEdge(source,destination);
+    }
+
+
+    cout<<"PARALLEL BFS : "<<endl;
+    g.parallelBFS(0);
+    cout<<endl;
+
+    return 0;
+}
